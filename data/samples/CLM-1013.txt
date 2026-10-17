@@ -1,0 +1,25 @@
+FIRST NOTICE OF LOSS
+Claim reference: CLM-1013
+Policy number: POL-HO-STD
+Named insured: Mina Rossi
+Loss type: water
+Date of loss: 2024-06-02
+Date reported: 2024-06-03
+Estimated damage USD: 12000
+Mold amount USD: 4000
+Injuries reported: no
+Police report filed: yes
+Description:
+A supply line burst and there was a sudden and accidental discharge of water from the plumbing system. Mold then grew on the wet drywall.
+Fact tags: sudden_discharge, mold
+Internal file supplements:
+policy_age_days: 600
+prior_claims_3y: 0.0
+late_night: 0.0
+attorney_involved: 0.0
+inconsistent_statements: 0.0
+prior_siu_referral: 0.0
+photo_count: 6.0
+witness_count: 1.0
+provider_repeat_count: 0.0
+repair_to_acv_ratio: 0.35

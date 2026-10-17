@@ -1,0 +1,309 @@
+{
+  "policies": [
+    {
+      "policy_id": "POL-AUTO-STD",
+      "product": "personal_auto",
+      "name": "Standard Personal Auto",
+      "terms": {
+        "collision_deductible": 500,
+        "comprehensive_deductible": 250,
+        "limit": 50000
+      },
+      "clauses": [
+        {
+          "clause_id": "COV-COLL",
+          "policy_id": "POL-AUTO-STD",
+          "kind": "coverage",
+          "title": "Collision coverage",
+          "text": "We pay for direct and accidental collision loss to a covered auto when it hits another vehicle or object, subject to the deductible and the actual cash value limit.",
+          "perils": ["collision"],
+          "keywords": ["collision", "crash", "bumper", "vehicle", "impact"]
+        },
+        {
+          "clause_id": "COV-COMP",
+          "policy_id": "POL-AUTO-STD",
+          "kind": "coverage",
+          "title": "Comprehensive coverage",
+          "text": "We pay for direct and accidental comprehensive loss that is not a collision, including theft, vandalism, fire, hail, windstorm, and contact with an animal.",
+          "perils": ["comprehensive", "theft", "vandalism", "fire", "weather", "animal"],
+          "keywords": ["comprehensive", "theft", "stolen", "vandalism", "hail", "animal", "deer", "fire"]
+        },
+        {
+          "clause_id": "COV-LIAB",
+          "policy_id": "POL-AUTO-STD",
+          "kind": "coverage",
+          "title": "Liability coverage",
+          "text": "We pay damages for bodily injury or property damage that an insured is legally liable to pay because of an auto accident.",
+          "perils": ["liability"],
+          "keywords": ["liability", "bodily injury", "property damage", "legally liable"]
+        },
+        {
+          "clause_id": "EXC-INTENT",
+          "policy_id": "POL-AUTO-STD",
+          "kind": "exclusion",
+          "title": "Intentional loss",
+          "text": "We do not cover any loss caused intentionally by an insured or at an insured's direction.",
+          "perils": [],
+          "keywords": ["intentional", "on purpose", "deliberate"]
+        },
+        {
+          "clause_id": "EXC-RACING",
+          "policy_id": "POL-AUTO-STD",
+          "kind": "exclusion",
+          "title": "Racing",
+          "text": "We do not cover loss arising from a race, speed contest, or practice for a race, whether organized or informal.",
+          "perils": [],
+          "keywords": ["racing", "race", "speed contest", "street race"]
+        },
+        {
+          "clause_id": "EXC-WEAR",
+          "policy_id": "POL-AUTO-STD",
+          "kind": "exclusion",
+          "title": "Wear and breakdown",
+          "text": "We do not cover loss caused by wear and tear, mechanical breakdown, electrical breakdown, or gradual deterioration.",
+          "perils": [],
+          "keywords": ["wear and tear", "mechanical breakdown", "deterioration"]
+        },
+        {
+          "clause_id": "EXC-BUSINESS",
+          "policy_id": "POL-AUTO-STD",
+          "kind": "exclusion",
+          "title": "Commercial use",
+          "text": "We do not cover loss while a covered auto carries persons or property for a fee or is otherwise used for a commercial rideshare purpose.",
+          "perils": [],
+          "keywords": ["business", "rideshare", "commercial", "for a fee"]
+        },
+        {
+          "clause_id": "EXC-AFTERMARKET",
+          "policy_id": "POL-AUTO-STD",
+          "kind": "exclusion",
+          "title": "Aftermarket electronics sublimit",
+          "text": "Aftermarket electronic equipment that the manufacturer did not permanently install, including audio and video systems, is covered only up to a 1000 dollar sublimit.",
+          "perils": [],
+          "keywords": ["aftermarket", "audio", "stereo", "electronic"]
+        },
+        {
+          "clause_id": "COND-THEFT-POLICE",
+          "policy_id": "POL-AUTO-STD",
+          "kind": "condition",
+          "title": "Theft police report",
+          "text": "Theft coverage applies only when a police report is filed and the report is available before we pay the theft claim.",
+          "perils": ["theft"],
+          "keywords": ["theft", "stolen", "police report"]
+        },
+        {
+          "clause_id": "LIM-TERMS",
+          "policy_id": "POL-AUTO-STD",
+          "kind": "limit",
+          "title": "Limit and deductible",
+          "text": "The most we pay for a covered auto loss is the limit or actual cash value, whichever is less, minus a 500 dollar collision deductible or a 250 dollar comprehensive deductible.",
+          "perils": [],
+          "keywords": ["deductible", "limit", "actual cash value"]
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-AUTO-PREM",
+      "product": "personal_auto",
+      "name": "Premium Personal Auto",
+      "terms": {
+        "collision_deductible": 250,
+        "comprehensive_deductible": 100,
+        "limit": 100000
+      },
+      "clauses": [
+        {
+          "clause_id": "COV-COLL",
+          "policy_id": "POL-AUTO-PREM",
+          "kind": "coverage",
+          "title": "Collision coverage",
+          "text": "We pay for direct and accidental collision loss to a covered auto when it hits another vehicle or object, subject to the deductible and the actual cash value limit.",
+          "perils": ["collision"],
+          "keywords": ["collision", "crash", "bumper", "vehicle", "impact"]
+        },
+        {
+          "clause_id": "COV-COMP",
+          "policy_id": "POL-AUTO-PREM",
+          "kind": "coverage",
+          "title": "Comprehensive coverage",
+          "text": "We pay for direct and accidental comprehensive loss that is not a collision, including theft, vandalism, fire, hail, windstorm, and contact with an animal.",
+          "perils": ["comprehensive", "theft", "vandalism", "fire", "weather", "animal"],
+          "keywords": ["comprehensive", "theft", "stolen", "vandalism", "hail", "animal", "deer", "fire"]
+        },
+        {
+          "clause_id": "COV-LIAB",
+          "policy_id": "POL-AUTO-PREM",
+          "kind": "coverage",
+          "title": "Liability coverage",
+          "text": "We pay damages for bodily injury or property damage that an insured is legally liable to pay because of an auto accident.",
+          "perils": ["liability"],
+          "keywords": ["liability", "bodily injury", "property damage"]
+        },
+        {
+          "clause_id": "EXC-INTENT",
+          "policy_id": "POL-AUTO-PREM",
+          "kind": "exclusion",
+          "title": "Intentional loss",
+          "text": "We do not cover any loss caused intentionally by an insured or at an insured's direction.",
+          "perils": [],
+          "keywords": ["intentional", "on purpose"]
+        },
+        {
+          "clause_id": "EXC-RACING",
+          "policy_id": "POL-AUTO-PREM",
+          "kind": "exclusion",
+          "title": "Racing",
+          "text": "We do not cover loss arising from a race, speed contest, or practice for a race, whether organized or informal.",
+          "perils": [],
+          "keywords": ["racing", "race", "speed contest"]
+        },
+        {
+          "clause_id": "EXC-WEAR",
+          "policy_id": "POL-AUTO-PREM",
+          "kind": "exclusion",
+          "title": "Wear and breakdown",
+          "text": "We do not cover loss caused by wear and tear, mechanical breakdown, electrical breakdown, or gradual deterioration.",
+          "perils": [],
+          "keywords": ["wear and tear", "mechanical breakdown"]
+        },
+        {
+          "clause_id": "EXC-BUSINESS",
+          "policy_id": "POL-AUTO-PREM",
+          "kind": "exclusion",
+          "title": "Commercial use",
+          "text": "We do not cover loss while a covered auto carries persons or property for a fee or is otherwise used for a commercial rideshare purpose.",
+          "perils": [],
+          "keywords": ["rideshare", "commercial", "for a fee"]
+        },
+        {
+          "clause_id": "EXC-AFTERMARKET",
+          "policy_id": "POL-AUTO-PREM",
+          "kind": "exclusion",
+          "title": "Aftermarket electronics sublimit",
+          "text": "Aftermarket electronic equipment that the manufacturer did not permanently install, including audio and video systems, is covered only up to a 1000 dollar sublimit.",
+          "perils": [],
+          "keywords": ["aftermarket", "audio", "electronic"]
+        },
+        {
+          "clause_id": "COND-THEFT-POLICE",
+          "policy_id": "POL-AUTO-PREM",
+          "kind": "condition",
+          "title": "Theft police report",
+          "text": "Theft coverage applies only when a police report is filed and the report is available before we pay the theft claim.",
+          "perils": ["theft"],
+          "keywords": ["theft", "police report", "stolen"]
+        },
+        {
+          "clause_id": "LIM-TERMS",
+          "policy_id": "POL-AUTO-PREM",
+          "kind": "limit",
+          "title": "Limit and deductible",
+          "text": "The most we pay for a covered auto loss is the limit or actual cash value, whichever is less, minus a 250 dollar collision deductible or a 100 dollar comprehensive deductible.",
+          "perils": [],
+          "keywords": ["deductible", "limit", "actual cash value"]
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-HO-STD",
+      "product": "homeowners",
+      "name": "Standard Homeowners",
+      "terms": {
+        "deductible": 1000,
+        "limit": 350000
+      },
+      "clauses": [
+        {
+          "clause_id": "COV-WATER",
+          "policy_id": "POL-HO-STD",
+          "kind": "coverage",
+          "title": "Sudden water discharge",
+          "text": "We cover sudden and accidental discharge of water from a plumbing, heating, or appliance system inside the dwelling.",
+          "perils": ["water"],
+          "keywords": ["sudden", "discharge", "plumbing", "burst", "water"]
+        },
+        {
+          "clause_id": "COV-FIRE",
+          "policy_id": "POL-HO-STD",
+          "kind": "coverage",
+          "title": "Fire and smoke",
+          "text": "We cover sudden loss to the dwelling caused by fire or smoke.",
+          "perils": ["fire"],
+          "keywords": ["fire", "smoke", "dwelling"]
+        },
+        {
+          "clause_id": "COV-PP",
+          "policy_id": "POL-HO-STD",
+          "kind": "coverage",
+          "title": "Personal property theft",
+          "text": "We cover theft of personal property from the residence premises.",
+          "perils": ["theft", "vandalism"],
+          "keywords": ["theft", "personal property", "burglary", "stolen"]
+        },
+        {
+          "clause_id": "EXC-FLOOD",
+          "policy_id": "POL-HO-STD",
+          "kind": "exclusion",
+          "title": "Flood",
+          "text": "We do not cover loss from flood, surface water, waves, or water that backs up through a sewer or drain.",
+          "perils": ["water"],
+          "keywords": ["flood", "surface water", "sewer"]
+        },
+        {
+          "clause_id": "EXC-EARTH",
+          "policy_id": "POL-HO-STD",
+          "kind": "exclusion",
+          "title": "Earth movement",
+          "text": "We do not cover loss from earth movement, including earthquake, landslide, or subsidence.",
+          "perils": [],
+          "keywords": ["earth movement", "earthquake", "landslide", "subsidence"]
+        },
+        {
+          "clause_id": "EXC-MOLD",
+          "policy_id": "POL-HO-STD",
+          "kind": "exclusion",
+          "title": "Mold",
+          "text": "We do not cover mold or mildew, except the tear-out cost that follows a covered sudden water discharge, and mold remediation above that cost is excluded.",
+          "perils": ["water"],
+          "keywords": ["mold", "mildew", "remediation"]
+        },
+        {
+          "clause_id": "EXC-INTENT",
+          "policy_id": "POL-HO-STD",
+          "kind": "exclusion",
+          "title": "Intentional loss",
+          "text": "We do not cover any loss caused intentionally by an insured or at an insured's direction.",
+          "perils": [],
+          "keywords": ["intentional", "on purpose"]
+        },
+        {
+          "clause_id": "EXC-NEGLECT",
+          "policy_id": "POL-HO-STD",
+          "kind": "exclusion",
+          "title": "Neglect",
+          "text": "We do not cover loss caused by neglect of the insured to save and preserve property after a loss.",
+          "perils": [],
+          "keywords": ["neglect", "preserve property"]
+        },
+        {
+          "clause_id": "COND-THEFT-POLICE",
+          "policy_id": "POL-HO-STD",
+          "kind": "condition",
+          "title": "Theft police report",
+          "text": "Theft coverage applies only when a police report is filed and the report is available before we pay the theft claim.",
+          "perils": ["theft"],
+          "keywords": ["theft", "police report", "stolen"]
+        },
+        {
+          "clause_id": "LIM-TERMS",
+          "policy_id": "POL-HO-STD",
+          "kind": "limit",
+          "title": "Limit and deductible",
+          "text": "The most we pay for a covered dwelling loss is the stated limit minus a 1000 dollar deductible.",
+          "perils": [],
+          "keywords": ["deductible", "limit", "dwelling"]
+        }
+      ]
+    }
+  ]
+}

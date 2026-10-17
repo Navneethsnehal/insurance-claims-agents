@@ -1,0 +1,25 @@
+FIRST NOTICE OF LOSS
+Claim reference: CLM-1007
+Policy number: POL-AUTO-STD
+Named insured: Noah Kim
+Loss type: comprehensive
+Date of loss: 2024-04-09
+Date reported: 2024-04-10
+Estimated damage USD: 1800
+Vehicle ACV USD: 11000
+Injuries reported: no
+Police report filed: yes
+Description:
+The shop found a mechanical breakdown from wear and tear and gradual deterioration of the transmission. There was no collision and no impact.
+Fact tags: wear_and_tear
+Internal file supplements:
+policy_age_days: 1600
+prior_claims_3y: 0.0
+late_night: 0.0
+attorney_involved: 0.0
+inconsistent_statements: 0.0
+prior_siu_referral: 0.0
+photo_count: 6.0
+witness_count: 1.0
+provider_repeat_count: 0.0
+repair_to_acv_ratio: 0.35
