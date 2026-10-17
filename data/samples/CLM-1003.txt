@@ -1,0 +1,25 @@
+FIRST NOTICE OF LOSS
+Claim reference: CLM-1003
+Policy number: POL-AUTO-STD
+Named insured: Chris Nguyen
+Loss type: theft
+Date of loss: 2024-08-19
+Date reported: 2024-08-19
+Estimated damage USD: 9000
+Vehicle ACV USD: 24000
+Injuries reported: no
+Police report filed: yes
+Description:
+The covered auto was stolen from a grocery parking lot. A police report was filed the same morning and the theft was entered in the department system.
+Fact tags: stolen
+Internal file supplements:
+policy_age_days: 1100
+prior_claims_3y: 0.0
+late_night: 0.0
+attorney_involved: 0.0
+inconsistent_statements: 0.0
+prior_siu_referral: 0.0
+photo_count: 6.0
+witness_count: 1.0
+provider_repeat_count: 0.0
+repair_to_acv_ratio: 0.35

@@ -1,0 +1,24 @@
+FIRST NOTICE OF LOSS
+Claim reference: CLM-1014
+Policy number: POL-HO-STD
+Named insured: Owen Blake
+Loss type: fire
+Date of loss: 2024-11-11
+Date reported: 2024-11-11
+Estimated damage USD: 18000
+Injuries reported: no
+Police report filed: yes
+Description:
+A kitchen fire spread smoke through the dwelling. The fire department extinguished the fire within an hour and boarded the window.
+Fact tags: smoke
+Internal file supplements:
+policy_age_days: 2000
+prior_claims_3y: 0.0
+late_night: 0.0
+attorney_involved: 0.0
+inconsistent_statements: 0.0
+prior_siu_referral: 0.0
+photo_count: 10
+witness_count: 1.0
+provider_repeat_count: 0.0
+repair_to_acv_ratio: 0.35

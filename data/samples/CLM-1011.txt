@@ -1,0 +1,24 @@
+FIRST NOTICE OF LOSS
+Claim reference: CLM-1011
+Policy number: POL-AUTO-STD
+Named insured: Drew Okonkwo
+Loss type: collision
+Date of loss: 2024-10-01
+Date reported: 2024-10-03
+Estimated damage USD: 3500
+Injuries reported: no
+Police report filed: no
+Description:
+A low-speed collision was reported two days later. The statements in the file conflict about where the impact happened.
+Fact tags: rear_end
+Internal file supplements:
+policy_age_days: 18
+prior_claims_3y: 4
+late_night: 1
+attorney_involved: 1
+inconsistent_statements: 1
+prior_siu_referral: 1
+photo_count: 0
+witness_count: 0
+provider_repeat_count: 5
+repair_to_acv_ratio: 0.9

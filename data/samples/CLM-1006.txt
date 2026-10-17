@@ -1,0 +1,25 @@
+FIRST NOTICE OF LOSS
+Claim reference: CLM-1006
+Policy number: POL-AUTO-STD
+Named insured: Riley Chen
+Loss type: vandalism
+Date of loss: 2024-01-14
+Date reported: 2024-01-14
+Estimated damage USD: 2200
+Vehicle ACV USD: 14000
+Injuries reported: no
+Police report filed: yes
+Description:
+The insured admitted the vandalism was intentional and that they broke the windshield on purpose after an argument.
+Fact tags: intentional
+Internal file supplements:
+policy_age_days: 840.0
+prior_claims_3y: 0.0
+late_night: 0.0
+attorney_involved: 0.0
+inconsistent_statements: 0.0
+prior_siu_referral: 0.0
+photo_count: 6.0
+witness_count: 1.0
+provider_repeat_count: 0.0
+repair_to_acv_ratio: 0.35

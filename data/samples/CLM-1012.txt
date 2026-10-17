@@ -1,0 +1,24 @@
+FIRST NOTICE OF LOSS
+Claim reference: CLM-1012
+Policy number: POL-HO-STD
+Named insured: Elena Vasquez
+Loss type: water
+Date of loss: 2024-05-22
+Date reported: 2024-05-23
+Estimated damage USD: 12000
+Injuries reported: no
+Police report filed: yes
+Description:
+Flood water and surface water entered the first floor after the river overtopped the bank. This was not a plumbing discharge.
+Fact tags: flood
+Internal file supplements:
+policy_age_days: 900
+prior_claims_3y: 0.0
+late_night: 0.0
+attorney_involved: 0.0
+inconsistent_statements: 0.0
+prior_siu_referral: 0.0
+photo_count: 6.0
+witness_count: 1.0
+provider_repeat_count: 0.0
+repair_to_acv_ratio: 0.2

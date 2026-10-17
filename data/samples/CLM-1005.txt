@@ -1,0 +1,25 @@
+FIRST NOTICE OF LOSS
+Claim reference: CLM-1005
+Policy number: POL-AUTO-STD
+Named insured: Samir Patel
+Loss type: collision
+Date of loss: 2024-05-01
+Date reported: 2024-05-01
+Estimated damage USD: 15000
+Vehicle ACV USD: 40000
+Injuries reported: no
+Police report filed: yes
+Description:
+The insured entered an informal street race, a speed contest on an industrial road, and struck a guardrail during the race.
+Fact tags: racing
+Internal file supplements:
+policy_age_days: 900
+prior_claims_3y: 0.0
+late_night: 0.0
+attorney_involved: 0.0
+inconsistent_statements: 0.0
+prior_siu_referral: 0.0
+photo_count: 6.0
+witness_count: 1.0
+provider_repeat_count: 0.0
+repair_to_acv_ratio: 0.35
