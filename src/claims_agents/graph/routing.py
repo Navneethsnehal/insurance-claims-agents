@@ -11,6 +11,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from claims_agents.config import Settings
+from claims_agents.guardrails.injection import has_high_severity
 
 WORK_NODES = (
     "guardrails",
@@ -41,28 +42,37 @@ def choose_next(state: Mapping[str, Any]) -> str:
     return "memo"
 
 
+def _as_float(value: object, default: float) -> float:
+    """Parse a metric. Missing values use ``default``; numeric zero does not."""
+    if isinstance(value, bool) or not isinstance(value, (int, float, str)):
+        return default
+    try:
+        return float(value)
+    except ValueError:
+        return default
+
+
 def escalation_reasons(state: Mapping[str, Any], settings: Settings) -> list[str]:
     reasons: list[str] = []
     findings = state.get("injection_findings") or []
-    if any(isinstance(item, dict) and item.get("severity") == "high" for item in findings):
+    if isinstance(findings, list) and has_high_severity(findings):
         reasons.append("prompt_injection")
     fraud = state.get("fraud") or {}
-    if isinstance(fraud, dict) and float(fraud.get("score") or 0) >= settings.fraud_hitl_threshold:
+    fraud_score = _as_float(fraud.get("score"), 0.0) if isinstance(fraud, dict) else 0.0
+    if fraud_score >= settings.fraud_hitl_threshold:
         reasons.append("fraud_score")
     claim = state.get("claim") or {}
     if isinstance(claim, dict):
-        if float(claim.get("estimated_damage") or 0) >= settings.value_hitl_threshold:
+        if _as_float(claim.get("estimated_damage"), 0.0) >= settings.value_hitl_threshold:
             reasons.append("high_value")
-        confidence = float(claim.get("extraction_confidence") or 1)
+        confidence = _as_float(claim.get("extraction_confidence"), 1.0)
         if confidence < settings.confidence_escalation_threshold:
             reasons.append("low_extraction_confidence")
     coverage = state.get("coverage") or {}
-    low_coverage = (
-        isinstance(coverage, dict)
-        and coverage
-        and (float(coverage.get("confidence") or 1) < settings.confidence_escalation_threshold)
-    )
-    if low_coverage:
+    low_coverage = isinstance(coverage, dict) and bool(coverage)
+    if low_coverage and _as_float(coverage.get("confidence"), 1.0) < (
+        settings.confidence_escalation_threshold
+    ):
         reasons.append("low_coverage_confidence")
     return reasons
 

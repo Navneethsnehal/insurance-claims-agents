@@ -57,6 +57,16 @@ _REQUIRED = (
 )
 
 
+def canonical_loss_type(value: str) -> str | None:
+    """Map a notice's loss label onto the coverage engine's vocabulary."""
+    return _LOSS_ALIASES.get(value.strip().lower())
+
+
+def canonical_fact_tag(value: str) -> str:
+    """Lowercase a fact tag and turn spaces into the underscores the form uses."""
+    return "_".join(value.strip().lower().split())
+
+
 def _line(text: str, label: str) -> str | None:
     match = re.search(rf"(?im)^{re.escape(label)}\s*:\s*(.+?)\s*$", text)
     if match is None:
@@ -97,7 +107,7 @@ def parse_fnol(text: str) -> ClaimExtraction:
     policy_id = _line(text, "Policy number")
     claimant = _line(text, "Named insured")
     raw_loss = _line(text, "Loss type")
-    loss_type = _LOSS_ALIASES.get((raw_loss or "").lower())
+    loss_type = canonical_loss_type(raw_loss) if raw_loss else None
     description_match = re.search(
         r"(?is)^description:\s*(.+?)(?:\nfact tags:|\Z)",
         text,
@@ -108,13 +118,16 @@ def parse_fnol(text: str) -> ClaimExtraction:
     if tags_raw is None or tags_raw.lower() == "none":
         fact_tags: list[str] = []
     else:
-        fact_tags = [tag.strip().lower() for tag in tags_raw.split(",") if tag.strip()]
+        fact_tags = [canonical_fact_tag(tag) for tag in tags_raw.split(",") if tag.strip()]
 
     features: dict[str, float] = {}
     for key in _FEATURE_KEYS:
         raw = _line(text, key)
         if raw is not None:
-            features[key] = float(raw)
+            try:
+                features[key] = float(raw)
+            except ValueError as exc:
+                raise ExtractionError(f"invalid {key}: {raw}") from exc
 
     present = {
         "claim_id": claim_id,

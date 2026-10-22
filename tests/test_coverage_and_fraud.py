@@ -79,6 +79,82 @@ def test_coverage_outcomes_match_the_book() -> None:
         assert estimate["indemnity"] == scenario.expected_indemnity
 
 
+def test_indemnity_is_capped_by_the_limit_and_floored_at_zero() -> None:
+    capped = estimate_payout(
+        {"deductible": 500, "limit": 50000},
+        {"outcome": "covered", "covered_basis": 80000, "confidence": 0.92},
+    )
+    assert capped["indemnity"] == 49500
+    below = estimate_payout(
+        {"deductible": 500, "limit": 50000},
+        {"outcome": "covered", "covered_basis": 400, "confidence": 0.92},
+    )
+    assert below["indemnity"] == 0
+    assert below["reserve"] == 0
+
+
+def test_aftermarket_at_the_sublimit_stays_covered() -> None:
+    claim = _claim_for("CLM-1008")
+    claim["aftermarket_amount"] = 1000
+    corpus = load_corpus(_settings().corpus_path)
+    decision = decide_coverage(claim, corpus, HybridRetriever(corpus.clauses), _settings())
+    assert decision["outcome"] == "covered"
+    assert "EXC-AFTERMARKET" not in {item["clause_id"] for item in decision["citations"]}
+    claim["aftermarket_amount"] = 1000.01
+    partial = decide_coverage(claim, corpus, HybridRetriever(corpus.clauses), _settings())
+    assert partial["outcome"] == "partial"
+    assert partial["covered_basis"] == 7999.99
+
+
+def test_mold_without_a_sudden_discharge_is_excluded() -> None:
+    claim = _claim_for("CLM-1013")
+    claim["fact_tags"] = ["mold"]
+    corpus = load_corpus(_settings().corpus_path)
+    decision = decide_coverage(claim, corpus, HybridRetriever(corpus.clauses), _settings())
+    assert decision["outcome"] == "excluded"
+    assert "EXC-MOLD" in {item["clause_id"] for item in decision["citations"]}
+
+
+def test_rule_boundaries() -> None:
+    def features(**overrides: float) -> dict[str, float]:
+        base = dict.fromkeys(FEATURE_NAMES, 0.0)
+        base.update(overrides)
+        return base
+
+    quiet = apply_rules(features(policy_age_days=30, claim_amount=15000, days_to_report=45))
+    assert {hit.code for hit in quiet}.isdisjoint({"early_high_value", "delayed_report"})
+    fired = apply_rules(features(policy_age_days=29, claim_amount=15000, days_to_report=46))
+    assert {hit.code for hit in fired} == {"early_high_value", "delayed_report"}
+
+
+def test_liability_deductible_is_zero() -> None:
+    from claims_agents.extraction.render import render_fnol
+
+    document = render_fnol(
+        claim_id="CLM-LIAB",
+        policy_id="POL-AUTO-STD",
+        claimant_name="Casey Brooks",
+        loss_type="liability",
+        date_of_loss="2024-06-12",
+        date_reported="2024-06-12",
+        estimated_damage=1800,
+        description=(
+            "The insured struck a mailbox while turning. No collision coverage is requested."
+        ),
+        fact_tags=(),
+        features={"policy_age_days": 400},
+        police_report=True,
+    )
+    parsed = parse_fnol(document)
+    corpus = load_corpus(_settings().corpus_path)
+    claim = normalize_claim(parsed, claim_id="CLM-LIAB", policy_id="POL-AUTO-STD", corpus=corpus)
+    decision = decide_coverage(claim, corpus, HybridRetriever(corpus.clauses), _settings())
+    estimate = estimate_payout(claim, decision)
+    assert decision["outcome"] == "covered"
+    assert claim["deductible"] == 0
+    assert estimate["indemnity"] == 1800
+
+
 def test_low_confidence_loads_the_reserve() -> None:
     estimate = estimate_payout(
         {"deductible": 500, "limit": 50000},

@@ -9,6 +9,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
+from claims_agents.extraction.parser import canonical_fact_tag, canonical_loss_type
 from claims_agents.fraud.features import FEATURE_NAMES, assemble_features
 from claims_agents.retrieval.corpus import Corpus, Policy
 from claims_agents.schemas import ClaimExtraction
@@ -45,7 +46,8 @@ def normalize_claim(
     ``claim_id`` and ``policy_id`` are the system of record, not the document.
     """
     policy = corpus.require(policy_id)
-    deductible = policy_deductible(policy, extraction.loss_type)
+    loss_type = canonical_loss_type(extraction.loss_type) or extraction.loss_type.strip().lower()
+    deductible = policy_deductible(policy, loss_type)
     limit = policy_limit(policy)
     confidence = extraction.extraction_confidence
     notes: list[str] = []
@@ -62,6 +64,9 @@ def normalize_claim(
 
     loss = date.fromisoformat(extraction.date_of_loss)
     reported = date.fromisoformat(extraction.date_reported)
+    if reported < loss:
+        notes.append("reported_before_loss")
+        confidence = min(confidence, 0.5)
     days_to_report = max(0, (reported - loss).days)
     features = assemble_features(
         estimated_damage=extraction.estimated_damage,
@@ -82,7 +87,7 @@ def normalize_claim(
         "policy_mismatch": mismatch,
         "product": policy.product,
         "claimant_name": extraction.claimant_name,
-        "loss_type": extraction.loss_type,
+        "loss_type": loss_type,
         "date_of_loss": extraction.date_of_loss,
         "date_reported": extraction.date_reported,
         "description": extraction.description,
@@ -93,7 +98,9 @@ def normalize_claim(
         "limit": round(limit, 2),
         "injuries": extraction.injuries,
         "police_report": extraction.police_report,
-        "fact_tags": list(extraction.fact_tags),
+        "fact_tags": [
+            tag for tag in (canonical_fact_tag(item) for item in extraction.fact_tags) if tag
+        ],
         "aftermarket_amount": round(float(extraction.aftermarket_amount), 2),
         "mold_amount": round(float(extraction.mold_amount), 2),
         "fraud_features": features,

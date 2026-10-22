@@ -12,7 +12,7 @@ High-fraud and high-value files have to stop before a memo is issued, survive lo
 
 `human_review` builds the payload the reviewer sees and calls `interrupt(payload)`. The compiled graph uses a checkpointer (`MemorySaver` by default). The first `invoke` returns with the interrupt set. `read_interrupt` lifts that payload into `pending_review` on the API response, and the status is `awaiting_human`.
 
-Resume is `graph.invoke(Command(resume={"decision", "reviewer", "notes"}), config)` on the same `thread_id`. The decision must be `approve` or `reject`. Anything else raises `ClaimStateError` before the graph is touched.
+Resume is `graph.invoke(Command(resume={"decision", "reviewer", "notes"}), config)` on the same `thread_id`. The decision must be `approve` or `reject`. `ClaimService.resume` raises `ClaimStateError` before `invoke` when the value is anything else, so the interrupt is still pending. The node itself does not raise on a bad value: `interrupt()` has already consumed that resume, and an exception there leaves a later approve undeliverable. It calls `interrupt` again and stays paused.
 
 Approve stores the decision and lets the supervisor write the memo with the system indemnity. Reject stores the decision and `compose_memo` forces `deny` and indemnity `0`. An excluded outcome stays `deny` on approve; the reviewer is not a coverage override.
 

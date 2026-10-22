@@ -9,7 +9,7 @@ from __future__ import annotations
 import time
 from typing import Any
 
-from claims_agents.llm.base import LLMResponse
+from claims_agents.llm.base import LLMResponse, token_response
 
 
 class OpenAIProvider:
@@ -31,13 +31,16 @@ class OpenAIProvider:
             ],
         )
         text = response.choices[0].message.content or ""
+        latency_ms = (time.perf_counter() - started) * 1000
         usage = response.usage
+        if usage is None:
+            return token_response(text, self.model, system, user, latency_ms)
         return LLMResponse(
             text=text,
             model=self.model,
             input_tokens=int(usage.prompt_tokens),
             output_tokens=int(usage.completion_tokens),
-            latency_ms=(time.perf_counter() - started) * 1000,
+            latency_ms=latency_ms,
         )
 
     def _build_client(self) -> Any:
@@ -63,13 +66,16 @@ class AnthropicProvider:
             messages=[{"role": "user", "content": user}],
         )
         text = "".join(getattr(block, "text", "") for block in response.content)
+        latency_ms = (time.perf_counter() - started) * 1000
         usage = response.usage
+        if usage is None:
+            return token_response(text, self.model, system, user, latency_ms)
         return LLMResponse(
             text=text,
             model=self.model,
             input_tokens=int(usage.input_tokens),
             output_tokens=int(usage.output_tokens),
-            latency_ms=(time.perf_counter() - started) * 1000,
+            latency_ms=latency_ms,
         )
 
     def _build_client(self) -> Any:

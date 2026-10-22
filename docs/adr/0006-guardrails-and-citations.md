@@ -10,9 +10,9 @@ Uploaded FNOL text is untrusted. It can contain a claimant's phone number, and i
 
 ## Decision
 
-The API redacts PII before `invoke`, so the checkpoint's input is already clean. The graph redacts again and scans for injection. High-severity injection is replaced with `[INJECTION_REMOVED]` and added to the escalation reasons. The stripped text is what extraction sees. The tag is not a coverage fact, so the underwriting engine's answer does not change.
+The API redacts PII before `invoke`, so the checkpoint's input is already clean. That first pass keeps kind and count and puts them on the input state. The graph redacts again. When the second pass finds nothing, it keeps the counts from the first pass instead of writing an empty list. High-severity injection is replaced with `[INJECTION_REMOVED]` and added to the escalation reasons. The stripped text is what extraction sees. The tag is not a coverage fact, so the underwriting engine's answer does not change.
 
-PII detectors cover email, SSN, US phone numbers (including a leading parenthesis, which is not a word boundary), a date of birth only when it is labeled, and card numbers that pass the Luhn check. Findings keep a kind and a count.
+PII detectors cover email, SSN, US phone numbers (including a leading parenthesis, which is not a word boundary, and a closing parenthesis that sits against the exchange), a date of birth only when it is labeled, and card numbers that pass the Luhn check. A card followed by more digits is still redacted when a 13 to 19 digit prefix of that run passes Luhn. A single digit string is checked only at its full length. Findings keep a kind and a count.
 
 `complete_structured` parses JSON, validates it, and retries up to `CLAIMS_STRUCTURED_RETRIES`. Exhausted retries halt the file with `needs_attention` rather than filling fields.
 

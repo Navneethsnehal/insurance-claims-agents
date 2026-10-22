@@ -6,9 +6,10 @@ can serialize them. These models are the validation boundary.
 
 from __future__ import annotations
 
+from datetime import date
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 CoverageOutcome = Literal["covered", "excluded", "partial"]
 Recommendation = Literal["pay", "deny", "partial_pay", "refer"]
@@ -50,6 +51,14 @@ class ClaimExtraction(BaseModel):
     mold_amount: float = 0
     fraud_features: FraudFeatureInput = Field(default_factory=FraudFeatureInput)
     extraction_confidence: float = 1
+
+    @field_validator("date_of_loss", "date_reported")
+    @classmethod
+    def _iso_date(cls, value: str) -> str:
+        try:
+            return date.fromisoformat(value).isoformat()
+        except ValueError as exc:
+            raise ValueError(f"invalid ISO date {value}") from exc
 
 
 class Citation(BaseModel):

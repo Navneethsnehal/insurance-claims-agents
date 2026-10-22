@@ -13,6 +13,7 @@ from sklearn.metrics import roc_auc_score
 
 from claims_agents.config import Settings
 from claims_agents.evals.metrics import (
+    GATES,
     citations_faithful,
     contains_planted_pii,
     coverage_correct,
@@ -137,19 +138,7 @@ def run_evaluation(
     return {
         "passed": not failures,
         "failures": failures,
-        "gates": {
-            name: threshold
-            for name, threshold in metrics.items()
-            if name
-            in {
-                "routing_accuracy",
-                "coverage_accuracy",
-                "citation_faithfulness",
-                "payout_accuracy",
-                "fraud_roc_auc",
-                "fraud_precision_at_k",
-            }
-        },
+        "gates": dict(GATES),
         "metrics": metrics,
         "cases": cases,
         "n_cases": count,
@@ -169,22 +158,16 @@ def render_markdown(report: dict[str, Any]) -> str:
         "| Metric | Result | Gate |",
         "| --- | ---: | ---: |",
     ]
-    gate_display = {
-        "routing_accuracy": 0.90,
-        "coverage_accuracy": 0.85,
-        "citation_faithfulness": 0.90,
-        "payout_accuracy": 0.90,
-        "fraud_roc_auc": 0.80,
-        "fraud_precision_at_k": 0.70,
-    }
-    for name, threshold in gate_display.items():
+    for name, threshold in GATES.items():
         lines.append(f"| {name} | {metrics[name]:.4f} | {threshold:.2f} |")
     lines.extend(
         [
             f"| retrieval_recall | {metrics['retrieval_recall']:.4f} | report |",
             f"| pii_leaks | {int(metrics['pii_leaks'])} | 0 |",
+            f"| fraud_test_prevalence | {metrics['fraud_test_prevalence']:.3f} | report |",
             f"| mean_latency_ms | {metrics['mean_latency_ms']:.2f} | report |",
             f"| p50_latency_ms | {metrics['p50_latency_ms']:.2f} | report |",
+            f"| p95_latency_ms | {metrics['p95_latency_ms']:.2f} | report |",
             f"| mean_input_tokens | {metrics['mean_input_tokens']:.1f} | report |",
             f"| mean_output_tokens | {metrics['mean_output_tokens']:.1f} | report |",
             f"| total_cost_usd | {metrics['total_cost_usd']:.6f} | report |",

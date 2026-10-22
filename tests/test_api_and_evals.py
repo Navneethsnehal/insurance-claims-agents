@@ -1,12 +1,16 @@
+import json
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from claims_agents.api.app import create_app
 from claims_agents.api.service import ClaimService
 from claims_agents.config import Settings
+from claims_agents.errors import ClaimStateError
 from claims_agents.evals.harness import run_evaluation, write_report
-from claims_agents.evals.metrics import gate_failures
+from claims_agents.evals.metrics import GATES, gate_failures
+from claims_agents.graph.workflow import build_graph
 from claims_agents.runtime import build_dependencies
 from claims_agents.scenarios import scenarios
 
@@ -101,6 +105,79 @@ def test_api_submit_review_and_resume() -> None:
         assert len(samples.json()) == len(scenarios())
 
 
+def test_failed_submit_releases_the_claim_id() -> None:
+    deps = build_dependencies(Settings(_env_file=None))
+    real = build_graph(deps)
+
+    class _Flaky:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def invoke(self, state: object, config: object) -> object:
+            self.calls += 1
+            if self.calls == 1:
+                raise RuntimeError("graph down")
+            return real.invoke(state, config)
+
+        def get_state(self, config: object) -> object:
+            return real.get_state(config)
+
+    service = ClaimService(deps, graph=_Flaky())
+    scenario = next(item for item in scenarios() if item.claim_id == "CLM-1001")
+    with pytest.raises(RuntimeError, match="graph down"):
+        service.submit(
+            policy_id=scenario.policy_id,
+            documents=[scenario.document()],
+            claim_id="CLM-RETRY",
+        )
+    created = service.submit(
+        policy_id=scenario.policy_id,
+        documents=[scenario.document()],
+        claim_id="CLM-RETRY",
+    )
+    assert created.status == "completed"
+    assert created.memo is not None
+    assert created.memo["recommendation"] == "pay"
+
+
+def test_bad_resume_does_not_consume_the_review() -> None:
+    service = _service()
+    scenario = next(item for item in scenarios() if item.claim_id == "CLM-1010")
+    paused = service.submit(
+        policy_id=scenario.policy_id,
+        documents=[scenario.document()],
+        claim_id=scenario.claim_id,
+    )
+    assert paused.status == "awaiting_human"
+    with pytest.raises(ClaimStateError, match="approve or reject"):
+        service.resume(scenario.claim_id, decision="maybe", reviewer="sam", notes="")
+    assert service.get(scenario.claim_id).status == "awaiting_human"
+    final = service.resume(
+        scenario.claim_id,
+        decision="approve",
+        reviewer="riley",
+        notes="within authority",
+    )
+    assert final.status == "completed"
+    assert final.memo is not None
+    assert final.memo["final_indemnity"] == 41500
+
+
+def test_submit_records_pii_counts_without_the_values() -> None:
+    service = _service()
+    scenario = next(item for item in scenarios() if item.claim_id == "CLM-1016")
+    created = service.submit(
+        policy_id=scenario.policy_id,
+        documents=[scenario.document()],
+        claim_id=scenario.claim_id,
+    )
+    kinds = {item["kind"] for item in created.pii_findings}
+    assert kinds == {"email", "phone", "ssn", "dob", "card"}
+    blob = json.dumps({"findings": created.pii_findings, "claim": created.claim})
+    for needle in scenario.planted_pii:
+        assert needle not in blob
+
+
 def test_gate_math_and_harness(tmp_path: Path) -> None:
     bad = {
         "routing_accuracy": 0.5,
@@ -118,6 +195,8 @@ def test_gate_math_and_harness(tmp_path: Path) -> None:
     report = run_evaluation(Settings(_env_file=None))
     assert report["passed"], report["failures"]
     assert report["metrics"]["pii_leaks"] == 0
+    assert report["gates"] == GATES
     write_report(report, tmp_path)
-    assert (tmp_path / "eval_report.json").exists()
-    assert "routing_accuracy" in (tmp_path / "eval_report.md").read_text(encoding="utf-8")
+    rendered = (tmp_path / "eval_report.md").read_text(encoding="utf-8")
+    assert "routing_accuracy" in rendered
+    assert "p95_latency_ms" in rendered

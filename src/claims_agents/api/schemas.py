@@ -43,6 +43,7 @@ class ClaimResponse(BaseModel):
     pending_review: dict[str, Any] | None = None
     errors: list[str]
     escalation_reasons: list[str]
+    pii_findings: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class HealthResponse(BaseModel):

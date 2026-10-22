@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import sys
+from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from typing import Any
 
@@ -51,6 +53,29 @@ def build_dependencies(settings: Settings | None = None) -> Dependencies:
     )
 
 
+# Context managers yielded by PostgresSaver.from_conn_string close the
+# connection when they are garbage-collected. Hold them for the process.
+_HELD_CHECKPOINTERS: list[AbstractContextManager[Any]] = []
+
+
+def enter_checkpointer(context: AbstractContextManager[Any]) -> Any:
+    """Enter a saver context manager and keep it open.
+
+    ``PostgresSaver.from_conn_string`` is a context manager. Returning that
+    object as the checkpointer never opens the connection and has no ``setup``.
+    """
+    saver = context.__enter__()
+    try:
+        setup = getattr(saver, "setup", None)
+        if callable(setup):
+            setup()
+    except Exception:
+        context.__exit__(*sys.exc_info())
+        raise
+    _HELD_CHECKPOINTERS.append(context)
+    return saver
+
+
 def build_checkpointer(settings: Settings) -> Any:
     """Return the LangGraph checkpointer.
 
@@ -71,7 +96,4 @@ def build_checkpointer(settings: Settings) -> Any:
         raise ClaimsError(
             "postgres checkpointer requires pip install 'claims-agents[postgres]'"
         ) from exc
-    saver = PostgresSaver.from_conn_string(settings.database_url)
-    if hasattr(saver, "setup"):
-        saver.setup()
-    return saver
+    return enter_checkpointer(PostgresSaver.from_conn_string(settings.database_url))

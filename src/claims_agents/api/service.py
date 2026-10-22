@@ -61,7 +61,7 @@ class ClaimService:
         chosen = claim_id or _new_claim_id()
         if not _CLAIM_ID.match(chosen):
             raise ClaimStateError(f"invalid claim id {chosen}")
-        prepared = [redact_pii(document)[0] for document in documents]
+        prepared, pii_findings = _screen_documents(documents)
         with self._lock:
             if chosen in self._index:
                 raise DuplicateClaimError(chosen)
@@ -71,10 +71,16 @@ class ClaimService:
                 "created_at": stamp,
                 "updated_at": stamp,
             }
-            self.graph.invoke(
-                initial_state(chosen, policy_id, prepared),
-                thread_config(chosen),
-            )
+            state = initial_state(chosen, policy_id, prepared)
+            if pii_findings:
+                state["pii_findings"] = pii_findings
+            try:
+                self.graph.invoke(state, thread_config(chosen))
+            except Exception:
+                # The id was reserved before invoke. A failure must not make
+                # the next submit of the same id a permanent 409.
+                self._index.pop(chosen, None)
+                raise
             self._index[chosen]["updated_at"] = _now()
             return self._present(chosen)
 
@@ -92,6 +98,8 @@ class ClaimService:
             pending = read_interrupt(self.graph.get_state(thread_config(claim_id)))
             if pending is None:
                 raise ClaimStateError("claim is not awaiting human review")
+            if decision not in {"approve", "reject"}:
+                raise ClaimStateError("human decision must be approve or reject")
             self.graph.invoke(
                 Command(
                     resume={"decision": decision, "reviewer": reviewer, "notes": notes},
@@ -154,4 +162,18 @@ class ClaimService:
             pending_review=pending,
             errors=list(values.get("errors") or []),
             escalation_reasons=list(values.get("escalation_reasons") or []),
+            pii_findings=[
+                item for item in (values.get("pii_findings") or []) if isinstance(item, dict)
+            ],
         )
+
+
+def _screen_documents(documents: list[str]) -> tuple[list[str], list[dict[str, Any]]]:
+    """Redact before the checkpoint stores the input, and keep the counts."""
+    prepared: list[str] = []
+    findings: list[dict[str, Any]] = []
+    for document in documents:
+        masked, hits = redact_pii(document)
+        prepared.append(masked)
+        findings.extend({"kind": hit.kind, "count": hit.count} for hit in hits)
+    return prepared, findings

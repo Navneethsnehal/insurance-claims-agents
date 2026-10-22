@@ -8,6 +8,7 @@ is still decided from parsed facts, not from instructions in the document.
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 _PATTERNS: tuple[tuple[str, re.Pattern[str], str], ...] = (
@@ -59,13 +60,15 @@ def strip_injections(text: str) -> tuple[str, list[InjectionFinding]]:
     return cleaned, findings
 
 
-def has_high_severity(findings: list[InjectionFinding] | list[dict[str, str]]) -> bool:
+def has_high_severity(findings: Sequence[object]) -> bool:
     for finding in findings:
-        severity: str | None
+        severity: object
         if isinstance(finding, InjectionFinding):
             severity = finding.severity
-        else:
+        elif isinstance(finding, dict):
             severity = finding.get("severity")
+        else:
+            continue
         if severity == "high":
             return True
     return False

@@ -8,7 +8,7 @@ from langgraph.types import Command
 from pydantic import BaseModel
 
 from claims_agents.config import Settings, get_settings
-from claims_agents.errors import ClaimStateError, LLMConfigError, StructuredOutputError
+from claims_agents.errors import LLMConfigError, StructuredOutputError
 from claims_agents.graph.routing import choose_next, escalation_reasons, worker_path
 from claims_agents.graph.workflow import build_graph, initial_state, read_interrupt, thread_config
 from claims_agents.llm.base import token_response
@@ -23,7 +23,7 @@ from claims_agents.observability.tracing import (
     langsmith_metadata,
 )
 from claims_agents.pricing import cost_usd
-from claims_agents.runtime import build_checkpointer, build_dependencies
+from claims_agents.runtime import build_checkpointer, build_dependencies, enter_checkpointer
 from claims_agents.scenarios import scenarios
 
 
@@ -113,12 +113,67 @@ def test_factory_and_provider_adapters() -> None:
     assert anthropic_result.output_tokens == 4
     assert cost_usd("unknown-model", 10, 10) == 0
 
+    missing_usage = SimpleNamespace(
+        choices=[SimpleNamespace(message=SimpleNamespace(content="noted"))],
+        usage=None,
+    )
+
+    class _NoUsage:
+        def create(self, **kwargs: object) -> SimpleNamespace:
+            del kwargs
+            return missing_usage
+
+    client = SimpleNamespace(chat=SimpleNamespace(completions=_NoUsage()))
+    fallback = OpenAIProvider("key", "gpt-4o-mini", client=client).complete(
+        system="sys", user="user"
+    )
+    assert fallback.text == "noted"
+    assert fallback.input_tokens > 0
+
 
 def test_checkpointer_selection() -> None:
     memory = build_checkpointer(Settings(_env_file=None, checkpointer="memory"))
     assert memory is not None
     with pytest.raises(Exception, match="DATABASE_URL"):
         build_checkpointer(Settings(_env_file=None, checkpointer="postgres"))
+
+
+def test_postgres_saver_context_is_entered() -> None:
+    class _Saver:
+        def __init__(self) -> None:
+            self.setup_called = False
+
+        def setup(self) -> None:
+            self.setup_called = True
+
+    class _Context:
+        def __init__(self, fail: bool = False) -> None:
+            self.saver = _Saver()
+            self.fail = fail
+            self.exited = False
+
+        def __enter__(self) -> _Saver:
+            return self.saver
+
+        def __exit__(self, *_args: object) -> bool:
+            self.exited = True
+            return False
+
+    opened = _Context()
+    saver = enter_checkpointer(opened)
+    assert saver is opened.saver
+    assert opened.saver.setup_called
+    assert opened.exited is False
+
+    class _Broken(_Saver):
+        def setup(self) -> None:
+            raise RuntimeError("setup failed")
+
+    broken = _Context()
+    broken.saver = _Broken()
+    with pytest.raises(RuntimeError, match="setup failed"):
+        enter_checkpointer(broken)
+    assert broken.exited is True
 
 
 def test_tracing_hooks_and_json_logs() -> None:
@@ -179,6 +234,15 @@ def test_supervisor_policy_unit() -> None:
         "low_extraction_confidence",
         "low_coverage_confidence",
     ]
+    # Numeric zero is a real confidence. It must not be treated as "missing".
+    assert escalation_reasons(
+        {
+            "claim": {"estimated_damage": 0, "extraction_confidence": 0},
+            "coverage": {"confidence": 0},
+            "fraud": {"score": 0},
+        },
+        settings,
+    ) == ["low_extraction_confidence", "low_coverage_confidence"]
     assert worker_path([{"node": "guardrails"}, {"node": "supervisor"}], "intake") == [
         "guardrails",
         "intake",
@@ -243,7 +307,7 @@ def test_graph_pays_denies_and_reviews() -> None:
         assert needle not in blob
 
 
-def test_invalid_human_decision_is_rejected() -> None:
+def test_invalid_human_decision_stays_resumable() -> None:
     deps = build_dependencies(Settings(_env_file=None))
     graph = build_graph(deps)
     scenario = next(item for item in scenarios() if item.claim_id == "CLM-1010")
@@ -251,8 +315,30 @@ def test_invalid_human_decision_is_rejected() -> None:
         initial_state("CLM-BAD", scenario.policy_id, [scenario.document()]),
         thread_config("CLM-BAD"),
     )
-    with pytest.raises(ClaimStateError):
-        graph.invoke(Command(resume={"decision": "maybe"}), thread_config("CLM-BAD"))
+    paused = graph.invoke(Command(resume={"decision": "maybe"}), thread_config("CLM-BAD"))
+    assert read_interrupt(graph.get_state(thread_config("CLM-BAD"))) is not None
+    assert paused.get("memo") is None
+    resumed = graph.invoke(
+        Command(resume={"decision": "approve", "reviewer": "sam", "notes": ""}),
+        thread_config("CLM-BAD"),
+    )
+    assert resumed["memo"]["recommendation"] == "pay"
+    assert resumed["memo"]["final_indemnity"] == 41500
+    assert resumed["human_decision"]["reviewer"] == "sam"
+
+
+def test_unparseable_feature_halts_instead_of_crashing() -> None:
+    deps = build_dependencies(Settings(_env_file=None))
+    graph = build_graph(deps)
+    scenario = next(item for item in scenarios() if item.claim_id == "CLM-1001")
+    document = scenario.document().replace("policy_age_days: 840.0", "policy_age_days: unknown")
+    graph.invoke(
+        initial_state("CLM-FEAT", scenario.policy_id, [document]),
+        thread_config("CLM-FEAT"),
+    )
+    values = graph.get_state(thread_config("CLM-FEAT")).values
+    assert values["halt_reason"] == "extraction_failed"
+    assert values["memo"]["recommendation"] == "refer"
 
 
 def test_empty_submission_refers() -> None:

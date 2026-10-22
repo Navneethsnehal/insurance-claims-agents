@@ -18,7 +18,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import interrupt
 
 from claims_agents.coverage.engine import decide_coverage
-from claims_agents.errors import ClaimStateError, PolicyNotFoundError, StructuredOutputError
+from claims_agents.errors import PolicyNotFoundError, StructuredOutputError
 from claims_agents.extraction.normalize import normalize_claim
 from claims_agents.graph.memo import as_dict, compose_memo, fallback_narrative
 from claims_agents.graph.routing import choose_next, escalation_reasons
@@ -100,15 +100,24 @@ def _missing(reason: str) -> dict[str, Any]:
     return {"halt_reason": reason, "errors": [reason], "status": "needs_attention"}
 
 
+def _pii_findings(state: GraphState, found: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Keep API counts when this scan sees already-redacted text.
+
+    The service redacts before ``invoke`` so the checkpoint input is clean,
+    then stores kind and count on the input. A second scan finds nothing.
+    Raw documents still produce the scan's own findings.
+    """
+    if found:
+        return found
+    prior = state.get("pii_findings") or []
+    return [item for item in prior if isinstance(item, dict)]
+
+
 def _guardrails(state: GraphState, deps: Dependencies) -> dict[str, Any]:
     del deps
     documents = [str(document) for document in state.get("documents") or []]
     if not any(document.strip() for document in documents):
-        return {
-            "halt_reason": "no_documents",
-            "errors": ["no_documents"],
-            "status": "needs_attention",
-        }
+        return _missing("no_documents")
     redacted: list[str] = []
     pii_findings: list[dict[str, Any]] = []
     injection_findings: list[dict[str, Any]] = []
@@ -120,6 +129,7 @@ def _guardrails(state: GraphState, deps: Dependencies) -> dict[str, Any]:
         injection_findings.extend(
             {"code": hit.code, "severity": hit.severity} for hit in injection_hits
         )
+    pii_findings = _pii_findings(state, pii_findings)
     logger.info(
         "documents screened",
         extra={
@@ -196,11 +206,7 @@ def _payout(state: GraphState, deps: Dependencies) -> dict[str, Any]:
     claim = state.get("claim")
     coverage = state.get("coverage")
     if not isinstance(claim, dict) or not isinstance(coverage, dict):
-        return {
-            "halt_reason": "missing_coverage",
-            "errors": ["missing_coverage"],
-            "status": "needs_attention",
-        }
+        return _missing("missing_coverage")
     estimate = estimate_payout(claim, coverage)
     reasons = escalation_reasons({**state, "payout": estimate}, deps.settings)
     return {
@@ -225,17 +231,20 @@ def _human_review(state: GraphState, deps: Dependencies) -> dict[str, Any]:
         "coverage_outcome": coverage.get("outcome"),
         "recommended_indemnity": payout.get("indemnity"),
     }
-    raw = interrupt(payload)
-    if not isinstance(raw, dict) or raw.get("decision") not in {"approve", "reject"}:
-        raise ClaimStateError("human decision must be approve or reject")
-    return {
-        "human_decision": {
-            "decision": str(raw["decision"]),
-            "reviewer": str(raw.get("reviewer") or "reviewer"),
-            "notes": str(raw.get("notes") or ""),
-        },
-        "status": "reviewed",
-    }
+    # A bad resume must not raise. LangGraph replays this node on the next
+    # resume, and an exception after interrupt() sticks: a later approve is
+    # never delivered. Interrupt again until the value is approve or reject.
+    while True:
+        raw = interrupt(payload)
+        if isinstance(raw, dict) and raw.get("decision") in {"approve", "reject"}:
+            return {
+                "human_decision": {
+                    "decision": str(raw["decision"]),
+                    "reviewer": str(raw.get("reviewer") or "reviewer"),
+                    "notes": str(raw.get("notes") or ""),
+                },
+                "status": "reviewed",
+            }
 
 
 def _memo(state: GraphState, deps: Dependencies) -> dict[str, Any]:
@@ -294,26 +303,11 @@ def _run_traced(
 def build_graph(deps: Dependencies, checkpointer: Any | None = None) -> Any:
     """Compile the workflow. A memory checkpointer is the local default."""
 
-    def guardrails(state: GraphState) -> dict[str, Any]:
-        return _run_traced("guardrails", state, deps, _guardrails)
+    def traced(name: str, fn: Any) -> Any:
+        def runner(state: GraphState) -> dict[str, Any]:
+            return _run_traced(name, state, deps, fn)
 
-    def intake(state: GraphState) -> dict[str, Any]:
-        return _run_traced("intake", state, deps, _intake)
-
-    def coverage(state: GraphState) -> dict[str, Any]:
-        return _run_traced("coverage", state, deps, _coverage)
-
-    def fraud(state: GraphState) -> dict[str, Any]:
-        return _run_traced("fraud", state, deps, _fraud)
-
-    def payout(state: GraphState) -> dict[str, Any]:
-        return _run_traced("payout", state, deps, _payout)
-
-    def human_review(state: GraphState) -> dict[str, Any]:
-        return _run_traced("human_review", state, deps, _human_review)
-
-    def memo(state: GraphState) -> dict[str, Any]:
-        return _run_traced("memo", state, deps, _memo)
+        return runner
 
     def supervisor(state: GraphState) -> dict[str, Any]:
         started = time.perf_counter()
@@ -336,14 +330,17 @@ def build_graph(deps: Dependencies, checkpointer: Any | None = None) -> Any:
         }
 
     graph: StateGraph[GraphState] = StateGraph(GraphState)
-    graph.add_node("guardrails", guardrails)
+    for name, fn in (
+        ("guardrails", _guardrails),
+        ("intake", _intake),
+        ("coverage", _coverage),
+        ("fraud", _fraud),
+        ("payout", _payout),
+        ("human_review", _human_review),
+        ("memo", _memo),
+    ):
+        graph.add_node(name, traced(name, fn))
     graph.add_node("supervisor", supervisor)
-    graph.add_node("intake", intake)
-    graph.add_node("coverage", coverage)
-    graph.add_node("fraud", fraud)
-    graph.add_node("payout", payout)
-    graph.add_node("human_review", human_review)
-    graph.add_node("memo", memo)
     graph.add_edge(START, "guardrails")
     graph.add_edge("guardrails", "supervisor")
     graph.add_conditional_edges(
@@ -359,10 +356,7 @@ def build_graph(deps: Dependencies, checkpointer: Any | None = None) -> Any:
             "end": END,
         },
     )
-    graph.add_edge("intake", "supervisor")
-    graph.add_edge("coverage", "supervisor")
-    graph.add_edge("fraud", "supervisor")
-    graph.add_edge("payout", "supervisor")
-    graph.add_edge("human_review", "supervisor")
+    for name in ("intake", "coverage", "fraud", "payout", "human_review"):
+        graph.add_edge(name, "supervisor")
     graph.add_edge("memo", END)
     return graph.compile(checkpointer=checkpointer if checkpointer is not None else MemorySaver())
