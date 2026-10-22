@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
@@ -67,8 +66,3 @@ def load_corpus(path: Path) -> Corpus:
     payload = json.loads(path.read_text(encoding="utf-8"))
     parsed = CorpusFile.model_validate(payload)
     return Corpus(parsed.policies)
-
-
-@lru_cache(maxsize=4)
-def cached_corpus(path: str) -> Corpus:
-    return load_corpus(Path(path))

@@ -67,6 +67,28 @@ def verbatim_quote(text: str, limit: int = 280) -> str:
     return text[:limit].rstrip()
 
 
+def _cite(
+    policy: Policy,
+    selected: list[tuple[str, str]],
+    retrieved: set[str],
+) -> list[dict[str, str]]:
+    citations: list[dict[str, str]] = []
+    for clause_id, role in selected:
+        clause = policy.clause(clause_id)
+        if clause is None:
+            continue
+        citations.append(
+            {
+                "clause_id": clause.clause_id,
+                "title": clause.title,
+                "role": role,
+                "quote": verbatim_quote(clause.text),
+                "source": "retrieval" if clause_id in retrieved else "lookup",
+            }
+        )
+    return citations
+
+
 def decide_coverage(
     claim: dict[str, Any],
     corpus: Corpus,
@@ -135,20 +157,7 @@ def decide_coverage(
     if claim.get("policy_mismatch"):
         confidence = min(confidence, 0.5)
 
-    citations: list[dict[str, str]] = []
-    for clause_id, role in selected:
-        clause = policy.clause(clause_id)
-        if clause is None:
-            continue
-        citations.append(
-            {
-                "clause_id": clause.clause_id,
-                "title": clause.title,
-                "role": role,
-                "quote": verbatim_quote(clause.text),
-                "source": "retrieval" if clause_id in retrieved else "lookup",
-            }
-        )
+    citations = _cite(policy, selected, retrieved)
     rationale_bits = [f"The {loss} loss is {outcome} under {policy.policy_id}."]
     rationale_bits.extend(
         f'{item["clause_id"]} ({item["role"]}): "{item["quote"]}"' for item in citations
